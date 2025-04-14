@@ -6,7 +6,7 @@
   <p>Connect, Code, and Control ROS robots remotely via secure peer-to-peer connectivity</p>
 </div>
 
-## 🚀 About Robotics.dev
+## 🤖 About Robotics.dev
 
 Robotics.dev is a cutting-edge peer-to-peer platform designed specifically for the robotics community, leveraging the power of ROS2 (Robot Operating System) to provide seamless development and operational capabilities. Our platform bridges the gap between robotics development and deployment, enabling teams to efficiently build, test, and operate robots in distributed environments anywhere (cloud, edge, and robot) without the limitations of traditional centralized architectures.
 
