@@ -8,12 +8,12 @@
 
 ## 🚀 About Robotics.dev
 
-Robotics.dev is a cutting-edge peer-to-peer platform designed specifically for the robotics community, leveraging the power of ROS2 (Robot Operating System 2) to provide seamless development and operational capabilities. Our platform bridges the gap between robotics development and deployment, enabling teams to efficiently build, test, and operate robots in distributed environments without the limitations of traditional centralized architectures.
+Robotics.dev is a cutting-edge peer-to-peer platform designed specifically for the robotics community, leveraging the power of ROS2 (Robot Operating System) to provide seamless development and operational capabilities. Our platform bridges the gap between robotics development and deployment, enabling teams to efficiently build, test, and operate robots in distributed environments anywhere (cloud, edge, and robot) without the limitations of traditional centralized architectures.
 
 ### Why Robotics.dev?
 
 - **True Peer-to-Peer Connectivity**: Direct robot-to-robot and developer-to-robot connections without centralized bottlenecks, even across the internet
-- **Advanced ROS2 Integration**: Leverages ROS2's DDS implementation with optimized discovery server configuration for improved performance
+- **Advanced ROS2 Integration**: Leverages ROS2's DDS implementation on existing ROS2 robots
 - **Simplified DevOps**: Streamlined workflows from development to deployment and operations with containerized environments
 - **Cross-Network Support**: Works seamlessly across NAT, firewalls, and different network topologies without complex VPN setup
 - **Enhanced Collaboration**: Multi-user development environment with real-time code sharing and version control
@@ -24,7 +24,7 @@ Robotics.dev is a cutting-edge peer-to-peer platform designed specifically for t
 
 ### For Developers
 
-- **Integrated Development Environment**: Code, simulate, and test in one platform with remote robot access
+- **Integrated Development Environment**: Code, simulate, and test in one platform with remote robot access (Linux, Windows, and Mac)
 - **Remote Debugging**: Debug robots in real-time regardless of physical location or network configuration
 - **Containerized Development**: Isolated, reproducible environments using Docker/Kubernetes integration
 - **CI/CD Pipelines**: Automated testing and deployment specifically designed for robotics applications
@@ -65,7 +65,7 @@ Robotics.dev is built on a modern, scalable architecture optimized for distribut
 - **Security Framework**: Military-grade encryption and authentication with fine-grained access control
 - **Data Management**: Efficient handling of high-volume sensor data with selective streaming and caching
 - **Extensible API**: Comprehensive RESTful and WebSocket APIs for integration with existing systems
-- **Hardware Support**: Works out-of-the-box with any ROS2 robotics hardware, including Raspberry Pi (Zero, 3, 4, 5), Radxa X4, LattePanda 3 Delta, Intel NUC, and Arduino/ESP32
+- **Hardware Support**: Works out-of-the-box with any ROS2 robotics hardware as well as Raspberry Pi (Zero, 3, 4, 5), Radxa X4, LattePanda 3 Delta, Intel NUC, and Arduino/ESP32
 
 ## 💻 Getting Started
 
@@ -115,8 +115,8 @@ const stop = {
   angular: {x: 0.0, y: 0.0, z: 0.0}
 };
 
-const robotId = 'YOUR_ROBOT_ID';
-const apiToken = 'YOUR_API_TOKEN';
+const robotId = 'ENTER ROBOTICS.DEV ROBOT ID HERE';
+const apiToken = 'ENTER ROBOTICS.DEV DEVELOPER API TOKEN HERE';
 
 // Connect RDK to robot via P2P and start listening for ROS messages
 robotics.connect({robot: robotId, token: apiToken}, (ros) => {
@@ -136,6 +136,105 @@ robotics.connect({robot: robotId, token: apiToken}, (ros) => {
 ```bash
 # Install Robotics.dev Python RDK
 pip install robotics-dev
+
+# Example code
+import asyncio
+import signal
+import base64
+import sys
+from pathlib import Path
+
+# Add the src directory to Python path for local testing
+src_path = Path(__file__).parent.parent / 'src'
+sys.path.append(str(src_path))
+
+# Import for local testing
+from robotics_dev.robotics import robotics
+# For production, use:
+# from robotics_dev import robotics
+
+# Create twist message for moving forward at 20% speed
+forward_twist = {
+    "linear": {
+        "x": 0.2,  # 20% forward velocity
+        "y": 0.0,
+        "z": 0.0
+    },
+    "angular": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    }
+}
+
+# Create stop twist message
+stop_twist = {
+    "linear": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "angular": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    }
+}
+
+one_time = True
+robot_id = 'ENTER ROBOTICS.DEV ROBOT ID HERE'
+api_token = 'ENTER ROBOTICS.DEV DEVELOPER API TOKEN HERE'
+
+async def handle_message(ros_message):
+    global one_time
+    # ros_message is already parsed by the RDK
+    print('Received p2p data:', ros_message)
+
+    if one_time:
+        one_time = False
+        await robotics.speak(robot_id, 'this is a test')
+
+        print('Moving robot forward at 20% speed...')
+        await robotics.twist(robot_id, forward_twist)
+
+        # Stop after 5 seconds
+        await asyncio.sleep(5)
+        print('Stopping robot...')
+        await robotics.twist(robot_id, stop_twist)
+
+async def main():
+    # Set up signal handlers for graceful shutdown
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, lambda: asyncio.create_task(cleanup()))
+
+    try:
+        # Connect to robotics.dev
+        await robotics.connect({
+            'server': 'wss://robotics.dev',
+            'robot': robot_id,
+            'token': api_token
+        }, handle_message)
+
+        # Keep running until interrupted
+        while True:
+            await asyncio.sleep(1)
+
+    except asyncio.CancelledError:
+        print("Shutdown requested...")
+    except Exception as e:
+        print(f"Error: {e}")
+
+async def cleanup():
+    print("Disconnecting...")
+    await robotics.disconnect()
+    # Stop the event loop
+    loop = asyncio.get_running_loop()
+    loop.stop()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+                    
 ```
 
 ## 📊 Use Cases
